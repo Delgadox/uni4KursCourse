@@ -1,6 +1,6 @@
 from typing import Union
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
 
 import json
 from request import *
@@ -73,16 +73,27 @@ def changeStatusAPI(table: str, id: int,status:int):
     
 # Запрос и вывод результата
 @app.get("/select/{table}")
-def selectAPI(table: str):
-    results = mySelect(table)
-
-    return {"response": results}
+def selectAPI(table: str, offset: int = 0, limit: int = Query(default=100, le=100)):
+    with Session(engine) as session:
+        items = session.exec(select(table).offset(offset).limit(limit)).all()
+        return items
+    
+# Запрос и вывод результата
+@app.get("/get/{table}/{id}")
+def selectAPI(table: str, id: int):
+    with Session(engine) as session:
+        item = session.get(table, id)
+        if not item:
+            raise HTTPException(status_code=404, detail="Item not found")
+        return item
 
 # Удаление строки
 @app.get("/delete/{table}/{id}")
 def selectAPI(table: str, id: int):
-
-    if(deleteRow(table,id)):
+    with Session(engine) as session:
+        item = session.get(table, id)
+        if not item:
+            raise HTTPException(status_code=404, detail="Item not found")
+        session.delete(item)
+        session.commit()
         return {"response": 1}
-    else:
-        return {"response": 0}
