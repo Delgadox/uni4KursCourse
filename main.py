@@ -1,6 +1,7 @@
 from typing import Union
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.encoders import jsonable_encoder
 
 import json
 from request import *
@@ -64,34 +65,62 @@ def readNewUserTime(finishStr: time,user_id: int):
 
     
 # Изменение статуса заказа
-@app.get("/changeStatus/{table}/{id}/{status}")
-def changeStatusAPI(table: str, id: int,status:int):
+@app.put("changeStatus/{table}/{id}/{status}")
+def changeCrushesStatusAPI(table: str, id: int,status:int):
     if(changeStatus(table, id, status)):
         return {"response": 1}
     else:
         return {"response": 0}
-    
+
 # Запрос и вывод результата
 @app.get("/select/{table}")
 def selectAPI(table: str, offset: int = 0, limit: int = Query(default=100, le=100)):
     with Session(engine) as session:
-        items = session.exec(select(table).offset(offset).limit(limit)).all()
-        return items
+        if(table == 'order'):
+            statement = select(order)
+        elif(table == 'reservation'):
+            statement = select(reservation)
+        elif(table == 'user'):
+            statement = select(user)
+        elif(table == 'crush'):
+            statement = select(crushes)
+        elif(table == 'userTime'):
+            statement = select(userTime)
+        result = session.exec(statement.offset(offset).limit(limit)).all()
+        return result
     
 # Запрос и вывод результата
 @app.get("/get/{table}/{id}")
 def selectAPI(table: str, id: int):
     with Session(engine) as session:
-        item = session.get(table, id)
+        if(table == 'order'):
+            item = session.get(order, id)
+        elif(table == 'reservation'):
+            item = session.get(reservation, id)
+        elif(table == 'user'):
+            item = session.get(user, id)
+        elif(table == 'crush'):
+            item = session.get(crushes, id)
+        elif(table == 'userTime'):
+            item = session.get(userTime, id)
         if not item:
             raise HTTPException(status_code=404, detail="Item not found")
         return item
 
 # Удаление строки
-@app.get("/delete/{table}/{id}")
+@app.delete("/delete/{table}/{id}")
 def selectAPI(table: str, id: int):
     with Session(engine) as session:
-        item = session.get(table, id)
+        if(table == 'order'):
+            item = session.get(order, id)
+        elif(table == 'reservation'):
+            item = session.get(reservation, id)
+        elif(table == 'user'):
+            item = session.get(user, id)
+        elif(table == 'crush'):
+            item = session.get(crushes, id)
+        elif(table == 'userTime'):
+            item = session.get(userTime, id)
         if not item:
             raise HTTPException(status_code=404, detail="Item not found")
         session.delete(item)
